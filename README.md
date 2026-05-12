@@ -1,6 +1,5 @@
 # Replication: Gu, Kelly, Xiu (2020)
 ## "Empirical Asset Pricing via Machine Learning"
-*Journal of Financial Studies*, 33(5), 2020
 
 ---
 
