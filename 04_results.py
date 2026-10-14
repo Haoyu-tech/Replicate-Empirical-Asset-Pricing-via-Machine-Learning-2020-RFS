@@ -25,7 +25,7 @@ from scipy import stats
 import warnings
 warnings.filterwarnings('ignore')
 
-BASE_DIR = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PRED_DIR = os.path.join(BASE_DIR, "predictions")
 OUT_DIR  = os.path.join(BASE_DIR, "output")
 DATA_PATH = os.path.join(BASE_DIR, "data", "data_clean.parquet")

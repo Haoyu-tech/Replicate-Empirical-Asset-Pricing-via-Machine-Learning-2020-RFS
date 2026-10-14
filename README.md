@@ -1,4 +1,6 @@
 # Replication: Gu, Kelly, Xiu (2020)
+
+[Reproduction guide](docs/REPRODUCIBILITY.md) · [Code and artifact map](docs/REPOSITORY_MAP.md)
 ## "Empirical Asset Pricing via Machine Learning"
 
 ---
@@ -95,8 +97,10 @@ ReplicateXiuML/
 
 ### Step 0 — Install dependencies
 ```
-pip install pandas numpy pyarrow scikit-learn torch tqdm matplotlib scipy
+python -m pip install -r requirements.txt
 ```
+
+Input paths default to `data/datashare.csv`, `data/macro_clean.csv`, and `wrds/Kelly_factor_153.parquet.zip` under the repository root. Override inputs with `GKX_DATASHARE_PATH`, `GKX_MACRO_PATH`, and `GKX_WRDS_ZIP_PATH` environment variables. Generated data, predictions and output are anchored to this checkout.
 
 ### Step 1 — Data preparation (~5 min)
 ```

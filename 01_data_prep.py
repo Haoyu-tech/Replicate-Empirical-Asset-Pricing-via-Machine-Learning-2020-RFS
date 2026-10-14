@@ -21,11 +21,18 @@ import pyarrow.parquet as pq
 from tqdm import tqdm
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-DATASHARE_PATH = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML\data\datashare.csv"
-ZIP_PATH       = r"D:\桌面文件\US stock research\wrds\Kelly_factor_153.parquet.zip"
-MACRO_PATH     = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML\data\macro_clean.csv"
-OUT_DIR        = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML\data"
-CLEAN_PATH     = os.path.join(OUT_DIR, "data_clean.parquet")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASHARE_PATH = os.environ.get(
+    "GKX_DATASHARE_PATH", os.path.join(BASE_DIR, "data", "datashare.csv")
+)
+ZIP_PATH = os.environ.get(
+    "GKX_WRDS_ZIP_PATH", os.path.join(BASE_DIR, "wrds", "Kelly_factor_153.parquet.zip")
+)
+MACRO_PATH = os.environ.get(
+    "GKX_MACRO_PATH", os.path.join(BASE_DIR, "data", "macro_clean.csv")
+)
+OUT_DIR = os.path.join(BASE_DIR, "data")
+CLEAN_PATH = os.path.join(OUT_DIR, "data_clean.parquet")
 
 TRAIN_START = "1957-01-01"
 TEST_END    = "2016-12-31"
