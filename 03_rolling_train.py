@@ -19,7 +19,7 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-BASE_DIR  = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML"
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, "data", "data_clean.parquet")
 PRED_DIR  = os.path.join(BASE_DIR, "predictions")
 os.makedirs(PRED_DIR, exist_ok=True)

@@ -4,7 +4,7 @@ Usage: python run_all.py
 """
 import subprocess, sys, os
 
-BASE = r"D:\桌面文件\US stock research\chapter2\ReplicateXiuML"
+BASE = os.path.dirname(os.path.abspath(__file__))
 steps = [
     ("Step 1: Data Preparation",  os.path.join(BASE, "01_data_prep.py")),
     ("Step 2: Rolling Training",  os.path.join(BASE, "03_rolling_train.py")),
