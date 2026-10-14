@@ -1,155 +1,74 @@
-# Replication: Gu, Kelly, Xiu (2020)
-## "Empirical Asset Pricing via Machine Learning"
+<div align="center">
+
+# Empirical Asset Pricing via Machine Learning
+
+Research replication of Gu, Kelly and Xiu (2020).
+
+![Models: Linear + Trees + Neural nets](https://img.shields.io/badge/Models-Linear%20%2B%20Trees%20%2B%20Neural%20nets-7C3AED?style=flat-square) ![Data: Monthly US equities](https://img.shields.io/badge/Data-Monthly%20US%20equities-0F766E?style=flat-square) ![Validation: Rolling windows](https://img.shields.io/badge/Validation-Rolling%20windows-3776AB?style=flat-square)
+
+[Quick start](#quick-start) · [Project map](#project-map) · [Reproduction guide](docs/REPRODUCIBILITY.md)
+
+</div>
 
 ---
 
 ## Overview
 
-This project replicates the main tables and figures of Gu, Kelly & Xiu (2020), which benchmarks 13 machine learning models for predicting US stock returns out-of-sample.
+A modular replication workflow for monthly return prediction with stock characteristics, macroeconomic interactions and industry indicators. Model families include linear estimators, dimension reduction, trees and neural-network ensembles.
 
-**Sample:** NYSE / AMEX / NASDAQ common stocks, March 1957 – December 2016  
-**Target variable:** Monthly excess return at t+1  
-**Feature set:** 920 predictors = 94 stock characteristics × (1 + 8 macro interactions) + 74 SIC-2 industry dummies  
+## Experiment design
 
----
+| Component | Original configuration described in the project |
+|---|---|
+| Equity sample | US common stocks, March 1957–December 2016 |
+| Target | Next-month excess return |
+| Features | 94 characteristics, 8 macro interaction variables and industry dummies |
+| Training | Expanding window |
+| Validation | 12-year rolling window before the test year |
+| Testing | One calendar year at a time, 1987–2016 |
 
-## Data Sources
+## Quick start
 
-| File | Source | Description |
-|------|--------|-------------|
-| `data/datashare.csv` | [Dacheng Xiu's website](https://dachxiu.chicagobooth.edu/) | Official 94 stock characteristics, 1957–2016 |
-| `wrds/Kelly_factor_153.parquet.zip` | WRDS | Returns, market equity, universe filters |
-| `data/macro_clean.csv` | Welch & Goyal (2008) via Tidy Finance | 8 macroeconomic predictors |
+Prepare the external characteristics, macro-predictor CSV and WRDS archive, then configure the original scripts' paths:
 
-### 94 Stock Characteristics
-Exactly as in Green, Hand & Zhang (2017). See `data/paper_chars.txt` for the full list.
+| Script | Paths to configure |
+|---|---|
+| `01_data_prep.py` | `DATASHARE_PATH`, `ZIP_PATH`, `MACRO_PATH` and `OUT_DIR` |
+| `03_rolling_train.py` / `04_results.py` | `BASE_DIR` |
+| `run_all.py` | `BASE` |
 
-### 8 Macro Variables (Welch-Goyal)
-`dp`, `ep`, `bm`, `ntis`, `tbl`, `tms`, `dfy`, `svar`  
-Stored with `m_` prefix (`m_dp`, `m_ep`, …) to avoid name collision with stock characteristics.
+The current main-branch scripts contain machine-specific paths. Point every stage at the same local project and prepared panel before running.
 
----
-
-## Models (13 total)
-
-| Model | Type | Key hyperparameters |
-|-------|------|---------------------|
-| OLS-3 | Linear | 3 predictors: size, value, momentum |
-| OLS+H | Linear | Huber loss (ε=1.35), no penalty |
-| ENet+H | Linear | Elastic net + Huber loss; α ∈ {1e-4…1}, L1 ratio ∈ {0.1, 0.5, 0.9} |
-| PLS | Dim. reduction | n_components ∈ {1, 2, 3, 5} |
-| PCR | Dim. reduction | n_components ∈ {3, 5, 10, 20, 50} |
-| GBRT+H | Tree | Depth ∈ {1–6}, lr ∈ {0.01, 0.1}, leaf ∈ {500, 1000} |
-| RF | Tree | min_samples_leaf ∈ {500, 1000, 2000} |
-| NN1–NN5 | Neural net | Depth 1–5; widths 32→16→8→4→2; L1 penalty, 10-ensemble |
-
----
-
-## Rolling Window Scheme
-
-```
-|<──── Train (expanding) ────>|<── Val (12 yr) ──>|< Test >|
- 1957                       t-13              t-1     t
-```
-
-- **Train:** all data from 1957 to (test_year − 13)
-- **Validation:** 12-year rolling window preceding test year
-- **Test:** one calendar year at a time, 1987–2016 (30 years)
-- Hyperparameters selected by minimising Huber loss on validation set
-- Model refitted on train + val before test prediction
-
----
-
-## File Structure
-
-```
-ReplicateXiuML/
-├── 01_data_prep.py        # Data cleaning & feature construction → data_clean.parquet
-├── models_config.py       # All 13 model classes + hyperparameter grids
-├── 03_rolling_train.py    # Rolling-window training for all models → predictions/
-├── 04_results.py          # Tables 1, 3, 7, 8 + all figures → output/
-├── run_all.py             # Runs steps 1, 3, 4 in sequence
-│
-├── data/
-│   ├── datashare.csv      # Official Xiu characteristics (1.5 GB)
-│   ├── macro_clean.csv    # 8 Welch-Goyal macro variables (1957–2016)
-│   ├── data_clean.parquet # Cleaned panel: 3.27M obs × 181 cols (snappy)
-│   └── paper_chars.txt    # 94 characteristic names (one per line)
-│
-├── predictions/           # Per-model parquet files (cols: permno, eom, y_true, y_pred)
-│   ├── ols3.parquet
-│   ├── ols_h.parquet
-│   └── …
-│
-└── output/                # Tables (CSV) and figures (PNG)
-    ├── Table1_OOS_R2.csv
-    ├── Table3_DM_Tests.csv
-    ├── Table7_Decile_Returns.csv
-    ├── Table8_Portfolio_Performance.csv
-    └── Fig_*.png
-```
-
----
-
-## How to Run
-
-### Step 0 — Install dependencies
-```
-pip install pandas numpy pyarrow scikit-learn torch tqdm matplotlib scipy
-```
-
-### Step 1 — Data preparation (~5 min)
-```
-python 01_data_prep.py
-```
-Outputs `data/data_clean.parquet` (181 columns, 3.27M rows).
-
-### Step 2 — Rolling-window training (hours to days depending on hardware)
-```
-python 03_rolling_train.py
-```
-Saves one parquet file per model to `predictions/`.  
-Models with `RUN_*` flags at the top can be toggled on/off.
-
-> **Memory note:** The 920-feature matrix is built on-the-fly each year to avoid storing the 94×8=752 interaction columns (would require ~10 GB). Peak RAM usage is ~6 GB for the largest training window (year 2016).
-
-### Step 3 — Results & figures
-```
-python 04_results.py
-```
-Reads `predictions/*.parquet`, writes tables and figures to `output/`.
-
-### Run all steps
-```
+```powershell
+python -m pip install -r requirements.txt
 python run_all.py
 ```
 
----
+The raw inputs are external. Training can be expensive; inspect the model flags before a full run.
 
-## Key Implementation Details
+## Project map
 
-### Feature construction (per paper Section 2.1)
-1. **Cross-sectional rank normalisation** of 94 characteristics each month → [-1, 1]
-2. **Missing values** → filled with cross-sectional median before ranking (= 0 after)
-3. **Interaction terms** `char_i × macro_j` (94 × 8 = 752 columns) computed at training time to save disk space
-4. **Industry dummies:** SIC-2 level, most frequent category dropped as reference
+| Script | Output |
+|---|---|
+| [01_data_prep.py](01_data_prep.py) | Prepared panel under `data/` |
+| [models_config.py](models_config.py) | Model implementations and hyperparameter grids |
+| [03_rolling_train.py](03_rolling_train.py) | Per-model predictions under `predictions/` |
+| [04_results.py](04_results.py) | Tables and figures under `output/` |
+| [run_all.py](run_all.py) | Preparation → training → reporting |
 
-### Neural network architecture (Section 3.5)
-- NN1: P→32→1 | NN2: P→32→16→1 | … | NN5: P→32→16→8→4→2→1
-- BatchNorm + ReLU at each hidden layer
-- L1 regularisation on all weight matrices (λ ∈ {1e-5, 1e-4, 1e-3})
-- 10-net ensemble; early stopping with patience = 5 on validation MSE
+## Reproduction notes
 
-### Out-of-sample R²
-```
-R²_OOS = 1 - SS_res / SS_tot
-```
-where SS_tot = Σ(y²) (benchmark: zero return, *not* the historical mean).
+Keep preparation, training and reporting pointed at the same local artifact locations. The dependency list is unpinned pending a validated reference run.
 
----
+Match preprocessing, target alignment, model flags and evaluation definitions before comparing with the paper. Detailed model settings and the original methodology notes are preserved in [the project reference](docs/PROJECT_REFERENCE.md).
 
 ## Reference
 
-Gu, S., Kelly, B., & Xiu, D. (2020). Empirical asset pricing via machine learning.  
-*The Review of Financial Studies*, 33(5), 2223–2273.  
-https://doi.org/10.1093/rfs/hhaa009
+Gu, S., Kelly, B. and Xiu, D. (2020). *Empirical Asset Pricing via Machine Learning*. The Review of Financial Studies, 33(5), 2223–2273. DOI: 10.1093/rfs/hhaa009.
+
+## Documentation
+
+- [Reproduction guide](docs/REPRODUCIBILITY.md): inputs, execution order and validation limits.
+- [Code and artifact map](docs/REPOSITORY_MAP.md): source and configuration paths.
+
+<sub>Research artifacts reflect the recorded experiment settings. Full results were not regenerated during documentation cleanup.</sub>
